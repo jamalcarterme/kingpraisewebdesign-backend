@@ -1,5 +1,6 @@
 const Testimonial = require('../models/Testimonial');
 const cloudinary = require('../config/cloudinary');
+const parseBoolean = require('../utils/parseBoolean');
 
 const getTestimonials = async (req, res, next) => {
   try {
@@ -13,7 +14,7 @@ const getTestimonials = async (req, res, next) => {
 
 const createTestimonial = async (req, res, next) => {
   try {
-    const { name, role, country, rating, quote, order } = req.body;
+    const { name, role, country, rating, quote, order, isActive } = req.body;
     const testimonial = await Testimonial.create({
       name,
       role,
@@ -21,6 +22,7 @@ const createTestimonial = async (req, res, next) => {
       rating,
       quote,
       order,
+      isActive: parseBoolean(isActive, true),
       source: 'manual',
       photo: req.file ? { url: req.file.path, publicId: req.file.filename } : undefined,
     });
@@ -42,7 +44,7 @@ const updateTestimonial = async (req, res, next) => {
     if (rating) testimonial.rating = rating;
     if (quote) testimonial.quote = quote;
     if (order !== undefined) testimonial.order = order;
-    if (isActive !== undefined) testimonial.isActive = isActive;
+    if (isActive !== undefined) testimonial.isActive = parseBoolean(isActive, testimonial.isActive);
 
     if (req.file) {
       if (testimonial.photo?.publicId) await cloudinary.uploader.destroy(testimonial.photo.publicId).catch(() => {});

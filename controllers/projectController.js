@@ -1,5 +1,6 @@
 const Project = require('../models/Project');
 const cloudinary = require('../config/cloudinary');
+const parseBoolean = require('../utils/parseBoolean');
 
 const getProjects = async (req, res, next) => {
   try {
@@ -23,7 +24,7 @@ const createProject = async (req, res, next) => {
       description,
       liveUrl,
       country,
-      isFeatured: isFeatured === 'true' || isFeatured === true,
+      isFeatured: parseBoolean(isFeatured, false),
       order,
       tags: tags ? tags.split(',').map((t) => t.trim()) : [],
       image: req.file ? { url: req.file.path, publicId: req.file.filename } : undefined,
@@ -46,7 +47,7 @@ const updateProject = async (req, res, next) => {
     if (description) project.description = description;
     if (liveUrl !== undefined) project.liveUrl = liveUrl;
     if (country !== undefined) project.country = country;
-    if (isFeatured !== undefined) project.isFeatured = isFeatured === 'true' || isFeatured === true;
+    if (isFeatured !== undefined) project.isFeatured = parseBoolean(isFeatured, project.isFeatured);
     if (order !== undefined) project.order = order;
     if (tags) project.tags = tags.split(',').map((t) => t.trim());
 

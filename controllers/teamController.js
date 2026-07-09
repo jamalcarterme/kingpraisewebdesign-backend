@@ -1,5 +1,6 @@
 const TeamMember = require('../models/TeamMember');
 const cloudinary = require('../config/cloudinary');
+const parseBoolean = require('../utils/parseBoolean');
 
 const getTeam = async (req, res, next) => {
   try {
@@ -13,12 +14,13 @@ const getTeam = async (req, res, next) => {
 
 const createTeamMember = async (req, res, next) => {
   try {
-    const { name, role, bio, order, linkedin, twitter, github, instagram } = req.body;
+    const { name, role, bio, order, isActive, linkedin, twitter, github, instagram } = req.body;
     const member = await TeamMember.create({
       name,
       role,
       bio,
       order,
+      isActive: parseBoolean(isActive, true),
       socials: { linkedin, twitter, github, instagram },
       photo: req.file ? { url: req.file.path, publicId: req.file.filename } : undefined,
     });
@@ -38,7 +40,7 @@ const updateTeamMember = async (req, res, next) => {
     if (role) member.role = role;
     if (bio !== undefined) member.bio = bio;
     if (order !== undefined) member.order = order;
-    if (isActive !== undefined) member.isActive = isActive;
+    if (isActive !== undefined) member.isActive = parseBoolean(isActive, member.isActive);
     member.socials = {
       linkedin: linkedin ?? member.socials.linkedin,
       twitter: twitter ?? member.socials.twitter,
