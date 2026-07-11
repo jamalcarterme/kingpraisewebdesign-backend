@@ -10,6 +10,9 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
+// ✅ FIX 1: Trust the proxy (Render.com)
+app.set('trust proxy', 1);
+
 // ===== Core middleware =====
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -33,6 +36,14 @@ const publicLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api/auth', publicLimiter);
 app.use('/api/bookings', publicLimiter);
 app.use('/api/contact', publicLimiter);
+
+// ✅ FIX 2: Custom upload limiter that respects user authentication
+const uploadLimiter = rateLimit({ 
+  windowMs: 15 * 60 * 1000, 
+  max: 50,  // 50 uploads per 15 minutes per user
+  keyGenerator: (req) => req.user?.id || req.ip  // Use user ID if authenticated, fall back to IP
+});
+app.use('/api/projects', uploadLimiter);
 
 // ===== Routes =====
 app.get('/', (req, res) => res.json({ success: true, message: 'King Praise Web Design API is running' }));
