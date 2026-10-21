@@ -4,27 +4,39 @@ const { isValidSignature } = require('../utils/paystack');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// POST /api/onboarding  (admin) — only email + expiryDate are required
+const addMonths = (d, m) => {
+  const r = new Date(d);
+  const day = r.getDate();
+  r.setMonth(r.getMonth() + m);
+  if (r.getDate() !== day) r.setDate(0); // e.g. Jan 31 + 1 month -> Feb 28/29
+  return r;
+};
+
+// POST /api/onboarding  (admin) — email + startDate required; expiry = startDate + renewalMonths (default 12)
 const onboardClient = async (req, res, next) => {
   try {
-    const { email, expiryDate, name, domain, amount, currency, renewalMonths, notes } = req.body;
+    const { email, startDate, expiryDate, name, domain, amount, currency, notes } = req.body;
+    const months = Number(req.body.renewalMonths) || 12;
     if (!email || !EMAIL_RE.test(email)) return res.status(400).json({ success: false, message: 'A valid client email is required' });
 
-    const expiry = new Date(expiryDate);
-    if (!expiryDate || isNaN(expiry)) return res.status(400).json({ success: false, message: 'A valid expiryDate is required' });
-    if (expiry.getTime() < Date.now() + 2 * 86400000) {
-      return res.status(400).json({ success: false, message: 'expiryDate must be at least 2 days in the future' });
-    }
+    const start = startDate ? new Date(startDate) : null;
+    if (start && isNaN(start)) return res.status(400).json({ success: false, message: 'A valid startDate is required' });
+    const expiry = start ? addMonths(start, months) : new Date(expiryDate);
+    if ((!start && !expiryDate) || isNaN(expiry)) return res.status(400).json({ success: false, message: 'A valid plan start date is required' });
 
     const client = await ClientOnboarding.create({
-      email, name, domain, expiryDate: expiry, amount, currency, renewalMonths, notes, onboardedBy: req.user._id,
+      email, name, domain, startDate: start || undefined, expiryDate: expiry, amount, currency, renewalMonths: months, notes, onboardedBy: req.user._id,
     });
 
     // If expiry is under 7 days away the week reminder no longer applies — skip it so it doesn't fire instantly
     if (expiry.getTime() - Date.now() < 7 * 86400000) {
       client.weekReminderSentAt = new Date();
-      await client.save();
     }
+    if (expiry.getTime() <= Date.now()) {
+      client.dayReminderSentAt = new Date();
+      client.status = 'expired';
+    }
+    await client.save();
 
     let emailSent = true;
     let emailError;
@@ -69,13 +81,22 @@ const updateClient = async (req, res, next) => {
     const client = await ClientOnboarding.findById(req.params.id);
     if (!client) return res.status(404).json({ success: false, message: 'Client not found' });
 
-    const { name, domain, amount, currency, renewalMonths, notes, expiryDate } = req.body;
+    const { name, domain, amount, currency, renewalMonths, notes, startDate } = req.body;
+    let { expiryDate } = req.body;
     if (name !== undefined) client.name = name;
     if (domain !== undefined) client.domain = domain;
     if (amount !== undefined) client.amount = amount;
     if (currency) client.currency = currency;
-    if (renewalMonths) client.renewalMonths = renewalMonths;
+    if (renewalMonths) client.renewalMonths = Number(renewalMonths);
     if (notes !== undefined) client.notes = notes;
+    if (startDate) {
+      const sd = new Date(startDate);
+      if (isNaN(sd)) return res.status(400).json({ success: false, message: 'Invalid startDate' });
+      const changed = !client.startDate || sd.toDateString() !== client.startDate.toDateString();
+      client.startDate = sd;
+      // only recompute when the start date was changed, so renewals (which extend expiry) aren't overwritten
+      if (changed) expiryDate = addMonths(sd, client.renewalMonths || 12);
+    }
     if (expiryDate) {
       const d = new Date(expiryDate);
       if (isNaN(d)) return res.status(400).json({ success: false, message: 'Invalid expiryDate' });

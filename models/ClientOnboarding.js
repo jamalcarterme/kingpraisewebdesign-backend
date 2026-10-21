@@ -18,7 +18,8 @@ const clientOnboardingSchema = new mongoose.Schema(
     email: { type: String, required: true, lowercase: true, trim: true, index: true },
     name: { type: String, trim: true }, // optional
     domain: { type: String, trim: true }, // optional, shown in emails
-    expiryDate: { type: Date, required: true }, // maintenance (domain + hosting) expiry
+    startDate: Date, // when the maintenance plan started
+    expiryDate: { type: Date, required: true }, // startDate + renewalMonths; reminders fire relative to this
     amount: { type: Number, min: 0 }, // renewal price in major units; falls back to DEFAULT_RENEWAL_AMOUNT
     currency: { type: String, default: 'NGN', uppercase: true },
     renewalMonths: { type: Number, default: 12, min: 1 },

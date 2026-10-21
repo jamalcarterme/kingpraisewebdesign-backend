@@ -8,7 +8,7 @@ const DAY = 86400000;
 const priceOf = (c) => c.amount ?? (Number(process.env.DEFAULT_RENEWAL_AMOUNT) || 0);
 
 const sendWelcome = async (c) => {
-  await sendEmail({ to: c.email, ...welcomeEmail(c) });
+  await sendEmail({ to: c.email, ...welcomeEmail(c, !!c.welcomeSentAt) });
   c.welcomeSentAt = new Date();
   await c.save();
 };
