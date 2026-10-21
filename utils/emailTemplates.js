@@ -16,7 +16,12 @@ const layout = (body) => `<div style="font-family:Arial,sans-serif;max-width:560
 const greeting = (c) => `<p>Hello${c.name ? ` ${escapeHtml(c.name)}` : ''},</p>`;
 const scope = (c) => `domain${c.domain ? ` (${escapeHtml(c.domain)})` : ''} and hosting maintenance`;
 
-const welcomeEmail = (c, corrected = false) => {
+const fmtDuration = (m) => {
+  const n = Number(m) || 12;
+  return n % 12 === 0 ? `${n / 12} year${n / 12 > 1 ? 's' : ''} (${n} months)` : `${n} month${n > 1 ? 's' : ''}`;
+};
+
+const welcomeEmail = (c) => {
   const daysAway = (new Date(c.expiryDate) - Date.now()) / 86400000;
   const reminderLine =
     daysAway <= 0
@@ -24,11 +29,21 @@ const welcomeEmail = (c, corrected = false) => {
       : daysAway >= 7
       ? '<b>A reminder email will be sent a week before the renewal date</b>, and a final reminder will be sent a day before it.'
       : '<b>A reminder email will be sent a day before the renewal date.</b>';
+  const rows = [
+    c.startDate ? ['Plan start date', fmtDate(c.startDate)] : null,
+    ['Duration', fmtDuration(c.renewalMonths)],
+    ['Expires on', fmtDate(c.expiryDate)],
+  ].filter(Boolean);
+  const table = `<table style="border-collapse:collapse;margin:12px 0;width:100%">${rows
+    .map(([k, v]) => `<tr><td style="padding:8px 12px;border:1px solid #eee;color:#666">${k}</td><td style="padding:8px 12px;border:1px solid #eee"><b>${v}</b></td></tr>`)
+    .join('')}</table>`;
   return {
-    subject: corrected ? 'Corrected: your King Praise Web Design plan details' : 'Welcome to King Praise Web Design',
+    subject: 'Welcome to King Praise Web Design',
     html: layout(`${greeting(c)}
-${corrected ? '<p><b>Please disregard our earlier welcome email. It showed an incorrect expiry date. The details below are correct.</b></p>' : "<p>Welcome aboard! We're delighted to have you as a client.</p>"}
-<p>Once your payment is complete, your ${scope(c)} plan will be active until <b>${fmtDate(c.expiryDate)}</b>. When it is due, we'll email you a secure link to renew it (domain + hosting).</p>
+<p>Welcome aboard! We're delighted to have you as a client.</p>
+<p>Here are the details of your ${scope(c)} plan:</p>
+${table}
+<p>When it is due, we'll email you a secure link to renew it (domain + hosting).</p>
 <p>${reminderLine}</p>
 <p>If you have any questions, simply reply to this email.</p>`),
   };
