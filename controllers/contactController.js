@@ -1,5 +1,6 @@
 const ContactMessage = require('../models/ContactMessage');
 const sendEmail = require('../utils/sendEmail');
+const escapeHtml = require('../utils/escapeHtml');
 
 const createContactMessage = async (req, res, next) => {
   try {
@@ -14,12 +15,12 @@ const createContactMessage = async (req, res, next) => {
       to: process.env.NOTIFY_EMAIL,
       subject: `New Contact Form Submission — ${name}`,
       html: `<h2>New enquiry</h2>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Business/Phone:</b> ${business || '-'}</p>
-        <p><b>Country:</b> ${country || '-'}</p>
-        <p><b>Service:</b> ${service || '-'}</p>
-        <p><b>Message:</b><br/>${message}</p>`,
+        <p><b>Name:</b> ${escapeHtml(name)}</p>
+        <p><b>Email:</b> ${escapeHtml(email)}</p>
+        <p><b>Business/Phone:</b> ${escapeHtml(business || '-')}</p>
+        <p><b>Country:</b> ${escapeHtml(country || '-')}</p>
+        <p><b>Service:</b> ${escapeHtml(service || '-')}</p>
+        <p><b>Message:</b><br/>${escapeHtml(message)}</p>`,
     }).catch((e) => console.error('Email error:', e.message));
 
     res.status(201).json({ success: true, message: "Message sent! We'll be in touch soon.", contact });

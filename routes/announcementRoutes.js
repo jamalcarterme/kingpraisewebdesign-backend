@@ -6,9 +6,9 @@ const {
   updateAnnouncement,
   deleteAnnouncement,
 } = require('../controllers/announcementController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 
-router.get('/', getAnnouncements);
+router.get('/', optionalAuth, getAnnouncements);
 router.post('/', protect, authorize('admin'), createAnnouncement);
 router.put('/:id', protect, authorize('admin'), updateAnnouncement);
 router.delete('/:id', protect, authorize('admin'), deleteAnnouncement);

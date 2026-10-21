@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const sendEmail = require('../utils/sendEmail');
+const escapeHtml = require('../utils/escapeHtml');
 
 // POST /api/bookings  (public - "Schedule a Call" form)
 const createBooking = async (req, res, next) => {
@@ -28,14 +29,14 @@ const createBooking = async (req, res, next) => {
       to: process.env.NOTIFY_EMAIL,
       subject: `New Call Booking — ${name}`,
       html: `<h2>New call request</h2>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Phone:</b> ${phone || '-'}</p>
-        <p><b>Company:</b> ${company || '-'}</p>
-        <p><b>Country:</b> ${country || '-'}</p>
-        <p><b>Project type:</b> ${projectType || '-'}</p>
-        <p><b>Preferred date/time:</b> ${preferredDate} at ${preferredTime} (${timezone || '-'})</p>
-        <p><b>Message:</b> ${message || '-'}</p>`,
+        <p><b>Name:</b> ${escapeHtml(name)}</p>
+        <p><b>Email:</b> ${escapeHtml(email)}</p>
+        <p><b>Phone:</b> ${escapeHtml(phone || '-')}</p>
+        <p><b>Company:</b> ${escapeHtml(company || '-')}</p>
+        <p><b>Country:</b> ${escapeHtml(country || '-')}</p>
+        <p><b>Project type:</b> ${escapeHtml(projectType || '-')}</p>
+        <p><b>Preferred date/time:</b> ${escapeHtml(preferredDate)} at ${escapeHtml(preferredTime)} (${escapeHtml(timezone || '-')})</p>
+        <p><b>Message:</b> ${escapeHtml(message || '-')}</p>`,
     }).catch((e) => console.error('Email error:', e.message));
 
     res.status(201).json({ success: true, message: 'Call request received! We will confirm shortly.', booking });
@@ -59,7 +60,7 @@ const getBookings = async (req, res, next) => {
 // PUT /api/bookings/:id  (admin - update status)
 const updateBooking = async (req, res, next) => {
   try {
-    const booking = await Booking.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const booking = await Booking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true, runValidators: true });
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     res.json({ success: true, booking });
   } catch (err) {

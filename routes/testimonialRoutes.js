@@ -6,10 +6,10 @@ const {
   updateTestimonial,
   deleteTestimonial,
 } = require('../controllers/testimonialController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-router.get('/', getTestimonials);
+router.get('/', optionalAuth, getTestimonials);
 router.post('/', protect, authorize('admin'), upload.single('photo'), createTestimonial);
 router.put('/:id', protect, authorize('admin'), upload.single('photo'), updateTestimonial);
 router.delete('/:id', protect, authorize('admin'), deleteTestimonial);

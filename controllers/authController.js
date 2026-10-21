@@ -77,14 +77,18 @@ const login = async (req, res, next) => {
 const adminLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: email?.toLowerCase(), role: 'admin' }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+    const user = await User.findOne({ email: email.toLowerCase(), role: 'admin' }).select('+password');
+    if (!user || !user.isActive || !(await user.matchPassword(password))) {
       return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
     }
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     user.refreshTokens.push(refreshToken);
+    if (user.refreshTokens.length > 5) user.refreshTokens.shift();
     await user.save();
 
     res.cookie('refreshToken', refreshToken, refreshCookieOptions());
@@ -102,7 +106,7 @@ const refresh = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
     const user = await User.findById(decoded.id);
-    if (!user || !user.refreshTokens.includes(token)) {
+    if (!user || !user.isActive || !user.refreshTokens.includes(token)) {
       return res.status(401).json({ success: false, message: 'Refresh token invalid, please log in again' });
     }
 
@@ -123,7 +127,8 @@ const logout = async (req, res, next) => {
         await User.findByIdAndUpdate(decoded.id, { $pull: { refreshTokens: token } });
       }
     }
-    res.clearCookie('refreshToken', { path: '/api/auth' });
+    const { maxAge, ...clearOpts } = refreshCookieOptions(); // options must match or cross-site cookies won't clear
+    res.clearCookie('refreshToken', clearOpts);
     res.json({ success: true, message: 'Logged out' });
   } catch (err) {
     next(err);

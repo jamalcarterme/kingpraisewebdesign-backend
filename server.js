@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 
 const connectDB = require('./config/db');
 const User = require('./models/User');
+const { startReminderScheduler } = require('./services/onboardingService');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -14,7 +15,8 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ===== Core middleware =====
-app.use(express.json({ limit: '2mb' }));
+// rawBody is kept so the Paystack webhook signature can be verified
+app.use(express.json({ limit: '2mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -38,11 +40,8 @@ app.use('/api/bookings', publicLimiter);
 app.use('/api/contact', publicLimiter);
 
 // ✅ FIX 2: Custom upload limiter that respects user authentication
-const uploadLimiter = rateLimit({ 
-  windowMs: 15 * 60 * 1000, 
-  max: 50,  // 50 uploads per 15 minutes per user
-  keyGenerator: (req) => req.user?.id || req.ip  // Use user ID if authenticated, fall back to IP
-});
+// (req.user isn't populated this early, so limit per IP; only write methods count)
+const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50, skip: (req) => req.method === 'GET' });
 app.use('/api/projects', uploadLimiter);
 
 // ===== Routes =====
@@ -59,6 +58,9 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/client-projects', require('./routes/clientProjectRoutes'));
+app.use('/api/onboarding', require('./routes/onboardingRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
+app.post('/api/cron/reminders', require('./controllers/onboardingController').cronReminders);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -90,4 +92,5 @@ const PORT = process.env.PORT || 5000;
 connectDB().then(async () => {
   await bootstrapAdmin();
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  startReminderScheduler();
 });

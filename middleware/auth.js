@@ -38,4 +38,18 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+// Like protect, but never rejects: sets req.user when a valid token is present.
+// Needed on public GET routes that show extra data (drafts, inactive items) to admins via ?all=true.
+const optionalAuth = async (req, res, next) => {
+  try {
+    const h = req.headers.authorization;
+    if (h && h.startsWith('Bearer ')) {
+      const decoded = jwt.verify(h.split(' ')[1], process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+      if (user && user.isActive) req.user = user;
+    }
+  } catch (e) { /* treat as anonymous */ }
+  next();
+};
+
+module.exports = { protect, authorize, optionalAuth };
