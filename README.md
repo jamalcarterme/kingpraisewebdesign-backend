@@ -30,7 +30,7 @@ Fill in:
 - **GOOGLE_PLACES_API_KEY / GOOGLE_PLACE_ID** — optional, powers the live
   Google reviews section on the homepage (see below).
 - **RESEND_API_KEY / EMAIL_FROM** — transactional email via Resend. Sender is
-  `no-reply@virtual.kingpraisewebdesign.name.ng` (verified domain). Without the key,
+  `no-reply@virtual-naija.kingpraisewebdesign.name.ng` (verified domain). Without the key,
   emails are skipped but data still saves.
 - **NOTIFY_EMAIL** — inbox that receives new booking/contact alerts (also used as reply-to).
 - **PAYSTACK_*** / **CRON_SECRET** — renewal payments and reminder cron.

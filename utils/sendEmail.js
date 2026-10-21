@@ -1,7 +1,7 @@
 // Sends email through Resend's HTTP API (no SDK needed, Node 18+ fetch).
-// Env: RESEND_API_KEY, EMAIL_FROM (verified Resend domain: virtual.kingpraisewebdesign.name.ng)
+// Env: RESEND_API_KEY, EMAIL_FROM (verified Resend domain: virtual-naija.kingpraisewebdesign.name.ng)
 // Throws on failure so callers can report it; fire-and-forget callers use .catch().
-const DEFAULT_FROM = 'King Praise Web Design <no-reply@virtual.kingpraisewebdesign.name.ng>';
+const DEFAULT_FROM = 'King Praise Web Design <no-reply@virtual-naija.kingpraisewebdesign.name.ng>';
 
 const sendEmail = async ({ to, subject, html }) => {
   if (!to) return { skipped: true };
