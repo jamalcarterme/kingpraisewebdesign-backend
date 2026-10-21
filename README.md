@@ -29,8 +29,11 @@ Fill in:
   photos, project screenshots, blog covers).
 - **GOOGLE_PLACES_API_KEY / GOOGLE_PLACE_ID** — optional, powers the live
   Google reviews section on the homepage (see below).
-- **SMTP_*** — optional, enables email notifications for new bookings/contact
-  messages. Without it, submissions still save to the database, just no email.
+- **RESEND_API_KEY / EMAIL_FROM** — transactional email via Resend. Sender is
+  `no-reply@virtual.kingpraisewebdesign.name.ng` (verified domain). Without the key,
+  emails are skipped but data still saves.
+- **NOTIFY_EMAIL** — inbox that receives new booking/contact alerts (also used as reply-to).
+- **PAYSTACK_*** / **CRON_SECRET** — renewal payments and reminder cron.
 
 ## 3. Run
 
